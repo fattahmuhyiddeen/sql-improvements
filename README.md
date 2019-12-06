@@ -1,3 +1,9 @@
+## Time Taken
+Time taken to complete this is around 4 hours
+
+
+## Solutions
+
 How to improve performance of this query.
 
 ```
@@ -123,9 +129,9 @@ Solutions are as below.
 
 1. Performance of the query can be improved by implementing index on each column that we use to search and filter in each related table.
 
-1. Wherever possible, use `=` instead of `LIKE`. For example, if possible, change `Jobs.activity LIKE '%キャビンアテンダント%'` to `Jobs.activity = 'キャビンアテンダント'` since querying exact value is faster than comparing using `LIKE`
+2. Wherever possible, use `=` instead of `LIKE`. For example, if possible, change `Jobs.activity LIKE '%キャビンアテンダント%'` to `Jobs.activity = 'キャビンアテンダント'` since querying exact value is faster than comparing using `LIKE`
 
-1. Instead of doing join and search on every rows, cache the result first before query to avoid joins for each rows.
+3. Instead of doing join and search on every rows, cache the result first before query to avoid joins for each rows.
 
 ```
 
