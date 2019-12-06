@@ -1,3 +1,5 @@
+How to improve performance of this query.
+
 ```
 SELECT Jobs.id AS `Jobs__id`,
   Jobs.name AS `Jobs__name`,
@@ -115,3 +117,99 @@ WHERE ((JobCategories.name LIKE '%キャビンアテンダント%'
 GROUP BY Jobs.id
 ORDER BY Jobs.sort_order desc,
     Jobs.id DESC LIMIT 50 OFFSET 0
+```
+
+Solutions are as below.
+
+1. Performance of the query can be improved by implementing index on each column that we use to search and filter in each related table.
+
+1. Wherever possible, use `=` instead of `LIKE`. For example, if possible, change `Jobs.activity LIKE '%キャビンアテンダント%'` to `Jobs.activity = 'キャビンアテンダント'` since querying exact value is faster than comparing using `LIKE`
+
+1. Instead of doing join and search on every rows, cache the result first before query to avoid joins for each rows.
+
+```
+
+SET @jobs_personalities_ids = (SELECT GROUP_CONCAT(id) FROM jobs_personalities WHERE deleted IS NULL);
+SET @personalities_ids = (SELECT GROUP_CONCAT(id) FROM personalities WHERE name LIKE '%キャビンアテンダント%' AND deleted IS NULL AND personality_id IN (@jobs_personalities_ids));
+
+SET @practical_skills_ids = (SELECT GROUP_CONCAT(id) FROM practical_skills WHERE name LIKE '%キャビンアテンダント%' AND deleted IS NULL);
+SET @job_types_ids = (SELECT GROUP_CONCAT(id) FROM job_types WHERE name LIKE '%キャビンアテンダント%' AND deleted IS NULL);
+SET @basic_abilities_ids = (SELECT GROUP_CONCAT(id) FROM basic_abilities WHERE name LIKE '%キャビンアテンダント%' AND deleted IS NULL);
+SET @jobs_tools_ids = (SELECT GROUP_CONCAT(id) FROM jobs_tools WHERE name LIKE '%キャビンアテンダント%');
+SET @affiliates_ids = (SELECT GROUP_CONCAT(id) FROM affiliates WHERE name LIKE '%キャビンアテンダント%' AND deleted IS NULL AND (type=1 OR type=2 OR type=3));
+SET @job_categories_ids = (SELECT GROUP_CONCAT(id) FROM job_categories WHERE name LIKE '%キャビンアテンダント%' AND deleted IS NULL);
+SET @job_types_ids = (SELECT GROUP_CONCAT(id) FROM job_types WHERE name LIKE '%キャビンアテンダント%' AND deleted IS NULL);
+
+SELECT Jobs.id AS `Jobs__id`,
+  Jobs.name AS `Jobs__name`,
+  Jobs.media_id AS `Jobs__media_id`,
+  Jobs.job_category_id AS `Jobs__job_category_id`, 
+  Jobs.job_type_id AS `Jobs__job_type_id`,
+  Jobs.description AS `Jobs__description`,
+  Jobs.detail AS `Jobs__detail`,
+  Jobs.business_skill AS `Jobs__business_skill`,
+  Jobs.knowledge AS `Jobs__knowledge`,
+  Jobs.location AS `Jobs__location`,
+  Jobs.activity AS `Jobs__activity`,
+  Jobs.academic_degree_doctor AS `Jobs__academic_degree_doctor`,
+  Jobs.academic_degree_master AS `Jobs__academic_degree_master`,
+  Jobs.academic_degree_professional AS `Jobs__academic_degree_professional`,Jobs.academic_degree_bachelor AS `Jobs__academic_degree_bachelor`,
+  Jobs.salary_statistic_group AS `Jobs__salary_statistic_group`,
+  Jobs.salary_range_first_year AS `Jobs__salary_range_first_year`,
+  Jobs.salary_range_average AS `Jobs__salary_range_average`,
+  Jobs.salary_range_remarks AS `Jobs__salary_range_remarks`,
+  Jobs.restriction AS `Jobs__restriction`,
+  Jobs.estimated_total_workers AS `Jobs__estimated_total_workers`,
+  Jobs.remarks AS `Jobs__remarks`,
+  Jobs.url AS `Jobs__url`,
+  Jobs.seo_description AS `Jobs__seo_description`,
+  Jobs.seo_keywords AS `Jobs__seo_keywords`,
+  Jobs.sort_order AS `Jobs__sort_order`,
+  Jobs.publish_status AS `Jobs__publish_status`,
+  Jobs.version AS `Jobs__version`,
+  Jobs.created_by AS `Jobs__created_by`,
+  Jobs.created AS `Jobs__created`,
+  Jobs.modified AS `Jobs__modified`,
+  Jobs.deleted AS `Jobs__deleted`,
+  JobCategories.id AS `JobCategories__id`,
+  JobCategories.name AS `JobCategories__name`,
+  JobCategories.sort_order AS `JobCategories__sort_order`,
+  JobCategories.created_by AS `JobCategories__created_by`,
+  JobCategories.created AS `JobCategories__created`,
+  JobCategories.modified AS `JobCategories__modified`,
+  JobCategories.deleted AS `JobCategories__deleted`,
+  JobTypes.id AS `JobTypes__id`,
+  JobTypes.name AS `JobTypes__name`,
+  JobTypes.job_category_id AS `JobTypes__job_category_id`,
+  JobTypes.sort_order AS `JobTypes__sort_order`,
+  JobTypes.created_by AS `JobTypes__created_by`,
+  JobTypes.created AS `JobTypes__created`,
+  JobTypes.modified AS `JobTypes__modified`,
+  JobTypes.deleted AS `JobTypes__deleted`
+FROM jobs Jobs
+INNER JOIN job_categories JobCategories
+  ON (JobCategories.id = (Jobs.job_category_id)
+INNER JOIN job_types JobTypes
+  ON (JobTypes.id = (Jobs.job_type_id)
+WHERE ((JobCategories.name LIKE '%キャビンアテンダント%'
+    OR JobTypes.name LIKE '%キャビンアテンダント%'
+    OR Jobs.name LIKE '%キャビンアテンダント%'
+    OR Jobs.description LIKE '%キャビンアテンダント%'
+    OR Jobs.detail LIKE '%キャビンアテンダント%'キャビン
+    OR Jobs.business_skill LIKE '%キャビンアテンダント%'
+    OR Jobs.knowledge LIKE '%キャビンアテンダント%'
+    OR Jobs.location LIKE '%キャビンアテンダント%'
+    OR Jobs.activity LIKE '%キャビンアテンダント%'
+    OR Jobs.salary_statistic_group LIKE '%キャビンアテンダント%'
+    OR Jobs.salary_range_remarks LIKE '%キャビンアテンダント%'
+    OR Jobs.restriction LIKE '%キャビンアテンダント%'
+    OR Jobs.remarks LIKE '%キャビンアテンダント%'
+    OR Jobs.personality_id IN (@personalities_ids)
+    OR Jobs.practical_skill_id IN (@practical_skills_ids)
+    OR Jobs.basic_ability_id IN (@basic_abilities_ids)
+    OR Jobs.affiliate_id IN (@affiliates_ids))
+    AND publish_status = 1
+    AND (Jobs.deleted) IS NULL)
+ORDER BY Jobs.sort_order desc,
+    Jobs.id DESC LIMIT 50 OFFSET 0
+```
